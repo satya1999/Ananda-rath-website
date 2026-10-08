@@ -36,6 +36,16 @@ export const usePackageBySlug = (slug: string) => {
   return { data, isLoading: data === undefined, error: null };
 };
 
+export const useFeaturedPackage = () => {
+  const data = useQuery(api.packages.getFeaturedPackage);
+  return { data, isLoading: data === undefined };
+};
+
+export const useRecentTrips = () => {
+  const data = useQuery(api.packages.getRecentTrips);
+  return { data, isLoading: data === undefined };
+};
+
 export const useAdminPackages = () => {
   const data = useQuery(api.packages.getPackages);
   return { data, isLoading: data === undefined };

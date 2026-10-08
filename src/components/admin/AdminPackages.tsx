@@ -20,6 +20,12 @@ interface PackageForm {
   highlights: string[];
   is_active: boolean;
   is_full: boolean;
+  // ── Featured & Recent Trips ──
+  is_featured: boolean;
+  is_past_trip: boolean;
+  completed_at: string;
+  pilgrim_count: string;
+  gallery_images: string;
 }
 
 // Suggested inclusions the user can quick-add
@@ -53,6 +59,7 @@ const emptyForm: PackageForm = {
   trip_date: "", pushback_price: "", sleeper_price: "",
   itinerary: [], inclusions: [], exclusions: [], highlights: [],
   is_active: true, is_full: false,
+  is_featured: false, is_past_trip: false, completed_at: "", pilgrim_count: "", gallery_images: "",
 };
 
 const AdminPackages = () => {
@@ -83,6 +90,11 @@ const AdminPackages = () => {
         highlights: Array.isArray(pkg.highlights) ? pkg.highlights : [],
         is_active: pkg.is_active ?? true,
         is_full: pkg.is_full ?? false,
+        is_featured: pkg.is_featured ?? false,
+        is_past_trip: pkg.is_past_trip ?? false,
+        completed_at: pkg.completed_at || "",
+        pilgrim_count: pkg.pilgrim_count ? String(pkg.pilgrim_count) : "",
+        gallery_images: Array.isArray(pkg.gallery_images) ? pkg.gallery_images.join("\n") : "",
       });
     } else {
       setEditing({ ...emptyForm });
@@ -128,6 +140,14 @@ const AdminPackages = () => {
         price_note: "per person",
         seats_left: 0,
         next_departure: undefined,
+        // ── Featured & Recent Trips ──
+        is_featured: editing.is_featured || undefined,
+        is_past_trip: editing.is_past_trip || undefined,
+        completed_at: editing.completed_at || undefined,
+        pilgrim_count: editing.pilgrim_count ? parseInt(editing.pilgrim_count) : undefined,
+        gallery_images: editing.gallery_images
+          ? editing.gallery_images.split("\n").map(u => u.trim()).filter(Boolean)
+          : undefined,
       });
       toast.success("Package saved!");
       setEditing(null);
@@ -190,6 +210,16 @@ const AdminPackages = () => {
                 {pkg.is_full && (
                   <div className="px-2 py-0.5 rounded border border-red-500/20 bg-red-600 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-lg animate-pulse">
                     House Full
+                  </div>
+                )}
+                {pkg.is_featured && (
+                  <div className="px-2 py-0.5 rounded bg-amber-500 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-lg">
+                    ⭐ Featured
+                  </div>
+                )}
+                {pkg.is_past_trip && (
+                  <div className="px-2 py-0.5 rounded bg-emerald-600 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-lg">
+                    ✓ Past Trip
                   </div>
                 )}
               </div>
@@ -467,7 +497,7 @@ const AdminPackages = () => {
               </div>
 
               <div className="flex items-center justify-between pt-4">
-                <div className="flex items-center gap-6">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                   <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer group">
                     <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${editing.is_active ? 'bg-primary border-primary' : 'bg-background border-input'}`}>
                       {editing.is_active && <div className="w-2 h-2 bg-white rounded-full"></div>}
@@ -483,18 +513,73 @@ const AdminPackages = () => {
                     <input type="checkbox" className="hidden" checked={editing.is_full} onChange={(e) => setEditing({ ...editing, is_full: e.target.checked })} /> 
                     <span className="text-destructive">Mark as House Full</span>
                   </label>
+
+                  <label className="flex items-center gap-2 text-sm font-bold cursor-pointer group">
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${editing.is_featured ? 'bg-amber-500 border-amber-500' : 'bg-background border-input'}`}>
+                      {editing.is_featured && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                    </div>
+                    <input type="checkbox" className="hidden" checked={editing.is_featured} onChange={(e) => setEditing({ ...editing, is_featured: e.target.checked })} /> 
+                    <span className="text-amber-600">⭐ Feature on Homepage</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 text-sm font-bold cursor-pointer group">
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${editing.is_past_trip ? 'bg-emerald-600 border-emerald-600' : 'bg-background border-input'}`}>
+                      {editing.is_past_trip && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                    </div>
+                    <input type="checkbox" className="hidden" checked={editing.is_past_trip} onChange={(e) => setEditing({ ...editing, is_past_trip: e.target.checked })} /> 
+                    <span className="text-emerald-700">✓ Mark as Recent/Past Trip</span>
+                  </label>
                 </div>
-                
-                <div className="flex gap-3">
-                  <button onClick={() => setEditing(null)} className="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-foreground hover:bg-muted rounded-xl transition-all">Cancel</button>
-                  <button 
-                    onClick={handleSave} 
-                    disabled={upsert.isPending} 
-                    className="rounded-xl bg-gradient-to-r from-primary to-maroon px-8 py-2.5 font-bold text-white shadow-lg shadow-red-500/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all"
-                  >
-                    {upsert.isPending ? "Saving..." : editing.id ? "Update Package" : "Create Package"}
-                  </button>
+              </div>
+
+              {/* Past Trip Extra Fields */}
+              {editing.is_past_trip && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-4">
+                  <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider">📸 Past Trip Details</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Completed Date (e.g. "March 2025")</label>
+                      <input
+                        placeholder="March 2025"
+                        value={editing.completed_at}
+                        onChange={(e) => setEditing({ ...editing, completed_at: e.target.value })}
+                        className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Number of Pilgrims</label>
+                      <input
+                        type="number"
+                        placeholder="45"
+                        value={editing.pilgrim_count}
+                        onChange={(e) => setEditing({ ...editing, pilgrim_count: e.target.value })}
+                        className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Gallery Image URLs (one per line)</label>
+                    <textarea
+                      rows={4}
+                      placeholder={"https://...photo1.jpg\nhttps://...photo2.jpg"}
+                      value={editing.gallery_images}
+                      onChange={(e) => setEditing({ ...editing, gallery_images: e.target.value })}
+                      className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none"
+                    />
+                    <p className="text-xs text-muted-foreground">Each URL on a new line. First image = main photo.</p>
+                  </div>
                 </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button onClick={() => setEditing(null)} className="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-foreground hover:bg-muted rounded-xl transition-all">Cancel</button>
+                <button 
+                  onClick={handleSave} 
+                  disabled={upsert.isPending} 
+                  className="rounded-xl bg-gradient-to-r from-primary to-maroon px-8 py-2.5 font-bold text-white shadow-lg shadow-red-500/20 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all"
+                >
+                  {upsert.isPending ? "Saving..." : editing.id ? "Update Package" : "Create Package"}
+                </button>
               </div>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Clock, MapPin, Star, Bus, Utensils, Shield, Heart, Image, Phone, Mail, MapPinned, ArrowRight, Sparkles, Send, Camera, X, Search, SlidersHorizontal, CalendarDays, Tag } from "lucide-react";
+import { Clock, MapPin, Star, Bus, Utensils, Shield, Heart, Image, Phone, Mail, MapPinned, ArrowRight, Sparkles, Send, Camera, X, Search, CalendarDays, Tag, Flame, CheckCircle2 } from "lucide-react";
 import WhatsAppButton from "./WhatsAppButton";
 import _heroImg from "@/assets/hero-kedarnath.jpg";
 import _logo from "@/assets/logo.png";
@@ -10,7 +10,7 @@ import _jagannathIcon from "@/assets/jagannath-icon.png";
 const heroImg = typeof _heroImg === "string" ? _heroImg : (_heroImg as any).src;
 const logo = typeof _logo === "string" ? _logo : (_logo as any).src;
 const jagannathIcon = typeof _jagannathIcon === "string" ? _jagannathIcon : (_jagannathIcon as any).src;
-import { usePackages, useTestimonials, useGalleryPhotos, useSubmitInquiry, useHeroConfig } from "@/hooks/useConvex";
+import { usePackages, useTestimonials, useGalleryPhotos, useSubmitInquiry, useHeroConfig, useFeaturedPackage, useRecentTrips } from "@/hooks/useConvex";
 import { WHATSAPP_NUMBER } from "@/data/config";
 
 // ── Fallback stats ──
@@ -217,6 +217,351 @@ export const StatsSection = () => (
     </div>
   </section>
 );
+
+// ── Featured Trip Spotlight Banner ──
+export const FeaturedTripBanner = () => {
+  const { data: featured } = useFeaturedPackage();
+  const timeLeft = useCountdown(
+    useMemo(() => {
+      if (featured?.next_departure) return new Date(featured.next_departure);
+      if (featured?.trip_date) return new Date(featured.trip_date);
+      return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    }, [featured])
+  );
+
+  if (!featured) return null;
+
+  const urgentSeats = featured.seats_left !== null && featured.seats_left !== undefined && featured.seats_left > 0 && featured.seats_left <= 20;
+
+  return (
+    <section className="py-16 relative overflow-hidden">
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-950/20" />
+      <div className="absolute inset-0 warm-pattern-bg opacity-40" />
+
+      <div className="container relative z-10">
+        {/* Section label */}
+        <div className="mb-8 flex items-center justify-center gap-3">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent to-primary/30" />
+          <div className="flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-5 py-2">
+            <Flame className="h-4 w-4 text-primary animate-pulse" />
+            <span className="text-sm font-bold uppercase tracking-[0.15em] text-primary">Featured Yatra</span>
+            <Flame className="h-4 w-4 text-primary animate-pulse" />
+          </div>
+          <div className="h-px flex-1 bg-gradient-to-l from-transparent to-primary/30" />
+        </div>
+
+        <div className="rounded-3xl overflow-hidden shadow-2xl border border-primary/10 bg-card">
+          <div className="grid lg:grid-cols-2">
+            {/* Left: Image */}
+            <div className="relative h-72 lg:h-auto min-h-[320px] overflow-hidden">
+              {featured.image_url ? (
+                <img
+                  src={featured.image_url}
+                  alt={featured.title}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="absolute inset-0 gradient-saffron" />
+              )}
+              {/* Overlay gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent lg:bg-gradient-to-r" />
+
+              {/* Badges on image */}
+              <div className="absolute top-4 left-4 flex flex-col gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+                  <Flame className="h-3.5 w-3.5" /> FEATURED TRIP
+                </span>
+                {urgentSeats && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-lg animate-pulse">
+                    ⚡ Only {featured.seats_left} seats left!
+                  </span>
+                )}
+                {featured.is_full && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+                    Fully Booked
+                  </span>
+                )}
+              </div>
+
+              {/* Bottom info on image (mobile) */}
+              <div className="absolute bottom-0 left-0 right-0 p-5 lg:hidden">
+                <h2 className="text-2xl font-extrabold text-white leading-tight">{featured.title}</h2>
+                {featured.subtitle && <p className="text-sm text-white/70 mt-1">{featured.subtitle}</p>}
+              </div>
+            </div>
+
+            {/* Right: Info */}
+            <div className="p-8 flex flex-col justify-between">
+              {/* Title (desktop) */}
+              <div className="hidden lg:block mb-5">
+                <h2 className="text-3xl font-extrabold text-foreground leading-tight">{featured.title}</h2>
+                {featured.subtitle && <p className="text-muted-foreground mt-2">{featured.subtitle}</p>}
+              </div>
+
+              {/* Meta pills */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                <span className="flex items-center gap-1.5 bg-secondary rounded-full px-3 py-1.5 text-sm font-medium text-foreground/80">
+                  <Clock className="h-4 w-4 text-primary" />{featured.duration}
+                </span>
+                <span className="flex items-center gap-1.5 bg-secondary rounded-full px-3 py-1.5 text-sm font-medium text-foreground/80">
+                  <MapPin className="h-4 w-4 text-primary" />{featured.starting_from}
+                </span>
+                {(featured.trip_date || featured.next_departure) && (
+                  <span className="flex items-center gap-1.5 bg-secondary rounded-full px-3 py-1.5 text-sm font-medium text-foreground/80">
+                    <CalendarDays className="h-4 w-4 text-primary" />{featured.trip_date || featured.next_departure}
+                  </span>
+                )}
+              </div>
+
+              {/* Highlights */}
+              {featured.highlights && featured.highlights.length > 0 && (
+                <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {featured.highlights.slice(0, 4).map((h) => (
+                    <div key={h} className="flex items-start gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <span className="text-sm text-foreground/80">{h}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Countdown Timer */}
+              <div className="mb-6 rounded-2xl bg-primary/5 border border-primary/15 p-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary/70 mb-3 text-center">⏰ SEATS FILLING FAST – DEPARTS IN</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { value: timeLeft.days, label: "Days" },
+                    { value: timeLeft.hours, label: "Hours" },
+                    { value: timeLeft.minutes, label: "Mins" },
+                    { value: timeLeft.seconds, label: "Secs" },
+                  ].map((item) => (
+                    <div key={item.label} className="text-center">
+                      <div className="rounded-xl bg-primary/10 border border-primary/20 py-2.5 px-1">
+                        <p className="text-xl font-extrabold text-primary tabular-nums">{String(item.value).padStart(2, "0")}</p>
+                      </div>
+                      <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price + CTA */}
+              <div className="flex flex-wrap items-center gap-4">
+                {!featured.is_full && (
+                  <div>
+                    <span className="text-3xl font-extrabold text-primary">{featured.price}</span>
+                    {featured.price_note && <span className="text-sm text-muted-foreground ml-1">/ {featured.price_note}</span>}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-3 ml-auto">
+                  <Link
+                    to={`/package/${featured.slug}`}
+                    className="inline-flex items-center gap-2 rounded-full border-2 border-primary px-5 py-2.5 text-sm font-semibold text-primary hover:bg-primary hover:text-white transition-all"
+                  >
+                    View Details <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <WhatsAppButton
+                    label="Book Now"
+                    className="!rounded-full !px-5 !py-2.5 !text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// ── Recent Trips Section ──
+export const RecentTripsSection = () => {
+  const { data: recentTrips, isLoading } = useRecentTrips();
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  if (isLoading) return null;
+  if (!recentTrips?.length) return null;
+
+  const current = recentTrips[activeIdx];
+  const allImages = [
+    ...(current.image_url ? [current.image_url] : []),
+    ...(current.gallery_images ?? []),
+  ];
+
+  return (
+    <section className="py-24 bg-gradient-to-b from-background via-secondary/30 to-background">
+      <div className="container">
+        {/* Header */}
+        <div className="mb-14 text-center">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary">📸 Trip Memories</p>
+          <h2 className="text-3xl font-bold text-foreground md:text-5xl">Our Recent Yatras</h2>
+          <p className="mt-4 text-muted-foreground max-w-lg mx-auto">Glimpses of the divine journeys our pilgrims have completed. Every trip, an unforgettable experience.</p>
+          <div className="section-divider mt-4" />
+        </div>
+
+        {/* Trip Selector Tabs */}
+        {recentTrips.length > 1 && (
+          <div className="flex flex-wrap justify-center gap-2 mb-10">
+            {recentTrips.map((trip, i) => (
+              <button
+                key={trip._id}
+                onClick={() => setActiveIdx(i)}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                  i === activeIdx
+                    ? "gradient-saffron text-white shadow-saffron"
+                    : "bg-secondary text-foreground/70 hover:bg-secondary/80"
+                }`}
+              >
+                {trip.title}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Active trip card (big showcase) */}
+        <div key={current._id} className="rounded-3xl overflow-hidden shadow-2xl border border-border/40 bg-card animate-fade-in-up">
+          <div className="grid lg:grid-cols-5">
+            {/* Left: Photo gallery (3 cols wide) */}
+            <div className="lg:col-span-3 relative">
+              {allImages.length > 0 ? (
+                <div className="relative h-80 lg:h-full min-h-[360px] overflow-hidden">
+                  <img
+                    src={allImages[0]}
+                    alt={current.title}
+                    className="absolute inset-0 h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+                  {/* Thumbnail strip */}
+                  {allImages.length > 1 && (
+                    <div className="absolute bottom-4 left-4 right-4 flex gap-2 overflow-x-auto pb-1">
+                      {allImages.slice(1, 5).map((url, i) => (
+                        <img
+                          key={i}
+                          src={url}
+                          alt=""
+                          className="h-14 w-20 rounded-lg object-cover border-2 border-white/40 shrink-0 cursor-pointer hover:border-white transition-all"
+                          loading="lazy"
+                          onError={(e) => { e.currentTarget.src = "https://placehold.co/200x140/f1f5f9/94a3b8?text=Photo"; }}
+                        />
+                      ))}
+                      {allImages.length > 5 && (
+                        <div className="h-14 w-20 rounded-lg bg-black/50 backdrop-blur-sm border-2 border-white/30 shrink-0 flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">+{allImages.length - 5}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Completed badge */}
+                  <div className="absolute top-4 left-4">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/90 backdrop-blur-sm px-3 py-1.5 text-xs font-bold text-white shadow-lg">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Trip Completed
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-80 lg:h-full min-h-[360px] gradient-saffron flex items-center justify-center">
+                  <Camera className="h-16 w-16 text-white/40" />
+                </div>
+              )}
+            </div>
+
+            {/* Right: Details (2 cols wide) */}
+            <div className="lg:col-span-2 p-8 flex flex-col justify-between">
+              <div>
+                <div className="mb-4">
+                  {current.completed_at && (
+                    <span className="text-xs font-semibold uppercase tracking-[0.15em] text-primary">
+                      🗓️ {current.completed_at}
+                    </span>
+                  )}
+                  <h3 className="mt-2 text-2xl font-extrabold text-foreground leading-snug">{current.title}</h3>
+                  {current.subtitle && <p className="mt-2 text-sm text-muted-foreground">{current.subtitle}</p>}
+                </div>
+
+                {/* Stats strip */}
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="rounded-xl bg-secondary p-3 text-center">
+                    <p className="text-xl font-extrabold text-foreground">{current.duration}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Duration</p>
+                  </div>
+                  {current.pilgrim_count ? (
+                    <div className="rounded-xl bg-secondary p-3 text-center">
+                      <p className="text-xl font-extrabold text-foreground">{current.pilgrim_count}+</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Pilgrims</p>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl bg-secondary p-3 text-center">
+                      <p className="text-xl font-extrabold text-foreground">{current.starting_from}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">From</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Highlights */}
+                {current.highlights && current.highlights.length > 0 && (
+                  <div className="space-y-2 mb-6">
+                    {current.highlights.slice(0, 5).map((h) => (
+                      <div key={h} className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <span className="text-sm text-foreground/80">{h}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* CTA */}
+              <div className="border-t border-border pt-5 flex flex-wrap gap-3">
+                <Link
+                  to={`/package/${current.slug}`}
+                  className="inline-flex items-center gap-2 rounded-full gradient-saffron px-5 py-2.5 text-sm font-semibold text-white shadow-saffron hover:shadow-lg transition-all"
+                >
+                  View Package <ArrowRight className="h-4 w-4" />
+                </Link>
+                <WhatsAppButton label="Enquire" className="!rounded-full !px-5 !py-2.5 !text-sm" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mini cards grid below */}
+        {recentTrips.length > 1 && (
+          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            {recentTrips.filter((_, i) => i !== activeIdx).slice(0, 4).map((trip) => (
+              <button
+                key={trip._id}
+                onClick={() => setActiveIdx(recentTrips.indexOf(trip))}
+                className="group relative h-36 overflow-hidden rounded-2xl border border-border/40 shadow-card card-interactive text-left"
+              >
+                {trip.image_url ? (
+                  <img
+                    src={trip.image_url}
+                    alt={trip.title}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="absolute inset-0 gradient-saffron-dark" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <p className="text-xs font-bold text-white leading-snug line-clamp-2">{trip.title}</p>
+                  {trip.completed_at && <p className="text-[10px] text-white/60 mt-0.5">{trip.completed_at}</p>}
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
+
 
 // ── Featured Packages Section (for home page) ──
 export const FeaturedPackagesSection = () => {
@@ -817,7 +1162,9 @@ const HomePage = () => (
   <>
     <HeroSection />
     <StatsSection />
+    <FeaturedTripBanner />
     <FeaturedPackagesSection />
+    <RecentTripsSection />
     <WhyChooseSection />
     <TestimonialsSection />
     <CTASection />

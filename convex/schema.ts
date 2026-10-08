@@ -25,9 +25,17 @@ export default defineSchema({
     is_active: v.boolean(),
     is_full: v.optional(v.boolean()),
     display_order: v.number(),
+    // ── Featured & Recent Trips ──────────────────────────────────────────────
+    is_featured: v.optional(v.boolean()),        // highlight on homepage
+    is_past_trip: v.optional(v.boolean()),       // show in "Recent Trips" section
+    completed_at: v.optional(v.string()),        // e.g. "March 2025" – shown on trip card
+    gallery_images: v.optional(v.array(v.string())), // extra photo URLs for recent trips
+    pilgrim_count: v.optional(v.number()),       // number of pilgrims on the trip
   })
     .index("by_slug", ["slug"])
-    .index("by_display_order", ["display_order"]),
+    .index("by_display_order", ["display_order"])
+    .index("by_featured", ["is_featured"])
+    .index("by_past_trip", ["is_past_trip"]),
 
   // ── Inquiries / Leads ──────────────────────────────────────────────────────
   inquiries: defineTable({

@@ -13,6 +13,29 @@ export const getPackages = query({
   },
 });
 
+// ── Get the single featured/highlighted trip ─────────────────────────────
+export const getFeaturedPackage = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("packages")
+      .withIndex("by_featured", (q) => q.eq("is_featured", true))
+      .first();
+  },
+});
+
+// ── Get recent/past trips for the homepage section ───────────────────────
+export const getRecentTrips = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("packages")
+      .withIndex("by_past_trip", (q) => q.eq("is_past_trip", true))
+      .order("desc")
+      .take(8);
+  },
+});
+
 // ── Get a single package by slug ───────────────────────────────────────────
 export const getPackageBySlug = query({
   args: { slug: v.string() },
@@ -50,6 +73,12 @@ export const upsertPackage = mutation({
       is_active: v.boolean(),
       is_full: v.optional(v.boolean()),
       display_order: v.number(),
+      // ── Featured & Recent Trips ──
+      is_featured: v.optional(v.boolean()),
+      is_past_trip: v.optional(v.boolean()),
+      completed_at: v.optional(v.string()),
+      gallery_images: v.optional(v.array(v.string())),
+      pilgrim_count: v.optional(v.number()),
     }),
   },
   handler: async (ctx, args) => {
