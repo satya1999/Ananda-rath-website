@@ -567,12 +567,24 @@ export const RecentTripsSection = () => {
 export const FeaturedPackagesSection = () => {
   const { data: packages, isLoading } = usePackages();
 
+  // Sort newest-first so recently added trips appear at the top
+  const recentPackages = useMemo(() => {
+    if (!packages) return [];
+    return [...packages]
+      .sort((a, b) => (b._creationTime ?? 0) - (a._creationTime ?? 0))
+      .slice(0, 3);
+  }, [packages]);
+
+  // Threshold: packages created within last 14 days get a "New" badge
+  const twoWeeksAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+
   return (
     <section className="py-24">
       <div className="container">
         <div className="mb-14 text-center">
           <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-primary">🕉️ Best Odisha Tirthayatra Packages</p>
           <h2 className="text-3xl font-bold text-foreground md:text-5xl">Top Spiritual Tourism Circuits</h2>
+          <p className="mt-3 text-sm text-muted-foreground">Showing most recently added trips first</p>
           <div className="section-divider mt-4" />
         </div>
         {isLoading ? (
@@ -596,55 +608,66 @@ export const FeaturedPackagesSection = () => {
           </div>
         ) : (
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {packages.slice(0, 3).map((pkg) => (
-              <Link to={`/package/${pkg.slug}`} key={pkg._id} className="group overflow-hidden rounded-2xl bg-card shadow-card card-interactive">
-                <div className="relative overflow-hidden">
-                  {pkg.image_url ? (
-                    <img src={pkg.image_url} alt={pkg.title} className="h-56 w-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" onError={(e) => { e.currentTarget.src = "https://placehold.co/600x400/f1f5f9/94a3b8?text=Image+Not+Found"; }} />
-                  ) : (
-                    <div className="h-56 w-full bg-muted flex items-center justify-center"><Image className="h-12 w-12 text-muted-foreground/40" /></div>
-                  )}
-                  {pkg.is_full ? (
-                    <div className="absolute top-3 right-3 rounded-full bg-destructive px-3 py-1 text-xs font-bold text-destructive-foreground shadow-lg animate-pulse">
-                      Fully Booked
-                    </div>
-                  ) : pkg.seats_left !== null && pkg.seats_left > 0 && pkg.seats_left <= 15 && (
-                    <div className="absolute top-3 right-3 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white shadow-lg">
-                      {pkg.seats_left} seats left
-                    </div>
-                  )}
-                  {pkg.next_departure && (
-                    <div className="absolute bottom-3 left-3 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white">
-                      Next: {pkg.next_departure}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col flex-1 p-5">
-                  <h3 className="mb-1 text-xl font-bold text-foreground group-hover:text-primary transition-colors leading-snug">{pkg.title}</h3>
-                  {pkg.subtitle && <p className="mb-3 text-sm text-muted-foreground line-clamp-1">{pkg.subtitle}</p>}
-                  <div className="mb-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1 bg-secondary rounded-full px-3 py-1 text-foreground/80"><Clock className="h-3.5 w-3.5" />{pkg.duration}</span>
-                    <span className="flex items-center gap-1 bg-secondary rounded-full px-3 py-1 text-foreground/80"><MapPin className="h-3.5 w-3.5" />{pkg.starting_from}</span>
-                    {pkg.trip_date && (
-                      <span className="flex items-center gap-1 bg-secondary rounded-full px-3 py-1 text-foreground/80"><CalendarDays className="h-3.5 w-3.5" />{pkg.trip_date}</span>
-                    )}
-                  </div>
-                  <div className="mt-auto pt-4 flex items-end justify-between border-t border-border">
-                    {pkg.is_full ? (
-                      <span className="text-sm font-bold text-destructive">Fully Booked</span>
+            {recentPackages.map((pkg) => {
+              const isNew = pkg._creationTime && pkg._creationTime > twoWeeksAgo;
+              return (
+                <Link to={`/package/${pkg.slug}`} key={pkg._id} className="group overflow-hidden rounded-2xl bg-card shadow-card card-interactive">
+                  <div className="relative overflow-hidden">
+                    {pkg.image_url ? (
+                      <img src={pkg.image_url} alt={pkg.title} className="h-56 w-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" onError={(e) => { e.currentTarget.src = "https://placehold.co/600x400/f1f5f9/94a3b8?text=Image+Not+Found"; }} />
                     ) : (
-                      <div>
-                        <span className="text-2xl font-extrabold text-primary">{pkg.price}</span>
-                        <span className="text-sm text-muted-foreground"> / {pkg.price_note}</span>
+                      <div className="h-56 w-full bg-muted flex items-center justify-center"><Image className="h-12 w-12 text-muted-foreground/40" /></div>
+                    )}
+                    {/* Top-right badges */}
+                    <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5">
+                      {isNew && (
+                        <div className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-lg animate-pulse">
+                          ✨ New
+                        </div>
+                      )}
+                      {pkg.is_full ? (
+                        <div className="rounded-full bg-destructive px-3 py-1 text-xs font-bold text-destructive-foreground shadow-lg animate-pulse">
+                          Fully Booked
+                        </div>
+                      ) : pkg.seats_left !== null && pkg.seats_left !== undefined && pkg.seats_left > 0 && pkg.seats_left <= 15 && (
+                        <div className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-white shadow-lg">
+                          {pkg.seats_left} seats left
+                        </div>
+                      )}
+                    </div>
+                    {pkg.next_departure && (
+                      <div className="absolute bottom-3 left-3 rounded-full bg-black/60 backdrop-blur-sm px-3 py-1 text-xs font-medium text-white">
+                        Next: {pkg.next_departure}
                       </div>
                     )}
-                    <span className="text-sm font-semibold text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
-                      View Details <ArrowRight className="h-4 w-4" />
-                    </span>
                   </div>
-                </div>
-              </Link>
-            ))}
+                  <div className="flex flex-col flex-1 p-5">
+                    <h3 className="mb-1 text-xl font-bold text-foreground group-hover:text-primary transition-colors leading-snug">{pkg.title}</h3>
+                    {pkg.subtitle && <p className="mb-3 text-sm text-muted-foreground line-clamp-1">{pkg.subtitle}</p>}
+                    <div className="mb-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1 bg-secondary rounded-full px-3 py-1 text-foreground/80"><Clock className="h-3.5 w-3.5" />{pkg.duration}</span>
+                      <span className="flex items-center gap-1 bg-secondary rounded-full px-3 py-1 text-foreground/80"><MapPin className="h-3.5 w-3.5" />{pkg.starting_from}</span>
+                      {pkg.trip_date && (
+                        <span className="flex items-center gap-1 bg-secondary rounded-full px-3 py-1 text-foreground/80"><CalendarDays className="h-3.5 w-3.5" />{pkg.trip_date}</span>
+                      )}
+                    </div>
+                    <div className="mt-auto pt-4 flex items-end justify-between border-t border-border">
+                      {pkg.is_full ? (
+                        <span className="text-sm font-bold text-destructive">Fully Booked</span>
+                      ) : (
+                        <div>
+                          <span className="text-2xl font-extrabold text-primary">{pkg.price}</span>
+                          <span className="text-sm text-muted-foreground"> / {pkg.price_note}</span>
+                        </div>
+                      )}
+                      <span className="text-sm font-semibold text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
+                        View Details <ArrowRight className="h-4 w-4" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
         {packages && packages.length > 3 && (
